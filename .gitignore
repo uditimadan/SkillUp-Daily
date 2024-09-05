@@ -1,0 +1,19 @@
+# Ignore Python virtual environments
+venv/
+.env/
+
+# Ignore Node.js dependencies
+node_modules/
+
+# Ignore compiled code
+*.pyc
+*.o
+*.out
+
+# Ignore IDE/editor specific files
+.vscode/
+.idea/
+
+# Ignore system files
+.DS_Store
+
