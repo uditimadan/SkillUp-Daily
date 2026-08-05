@@ -15,12 +15,17 @@ staticfiles/
 
 # Environment
 .env
+.env/
 
 # Node / Expo
 node_modules/
 .expo/
 dist/
 web-build/
+
+# IDE
+.vscode/
+.idea/
 
 # Local verification artifacts
 .verify-screenshots/
