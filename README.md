@@ -2,6 +2,9 @@
 
 A mobile/web app that suggests daily skills and hobbies, lets users swipe them into a to-do list, and coaches progress through practice stages. Based on the included requirement document (`Requirement Document for SkillUp Daily.pdf`).
 
+<img width="1083" height="710" alt="Screenshot 2026-08-05 at 12 29 36 PM" src="https://github.com/user-attachments/assets/e339e6ff-3ac3-46ad-bd21-7e8c6fb2d459" />
+
+
 ## Project structure
 
 ```
