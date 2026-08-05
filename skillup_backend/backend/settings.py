@@ -169,6 +169,6 @@ REST_FRAMEWORK = {
     ],
 }
 
-# Optional: set ANTHROPIC_API_KEY in the environment to generate skills with
-# Claude. Without it, the API falls back to a built-in task database.
-ANTHROPIC_API_KEY = os.environ.get('ANTHROPIC_API_KEY', '')
+# Optional: set OPENAI_API_KEY in the environment to generate skills with
+# OpenAI. Without it, the API falls back to a built-in task database.
+OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', '')

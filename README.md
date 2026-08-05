@@ -32,13 +32,13 @@ python3 -m venv .venv
 
 Binding to `0.0.0.0` lets phones/emulators on your LAN reach the API. In `DEBUG` mode, `ALLOWED_HOSTS` is permissive (`*`).
 
-### Optional Anthropic AI
+### Optional OpenAI
 
 Copy `.env.example` to `.env` and set a key:
 
 ```bash
 cp .env.example .env
-# edit .env — set ANTHROPIC_API_KEY=...
+# edit .env — set OPENAI_API_KEY=...
 ```
 
 Without a key, skill suggestions, coaching, and “Improve” use built-in fallbacks so the app works out of the box.
@@ -57,7 +57,7 @@ Without a key, skill suggestions, coaching, and “Improve” use built-in fallb
 
 1. Push this repo to GitHub.
 2. In [Render](https://render.com), **New → Blueprint** and select the repo (`render.yaml` at the root).
-3. Set `ANTHROPIC_API_KEY` in the service env vars if you want live AI (optional).
+3. Set `OPENAI_API_KEY` in the service env vars if you want live AI (optional).
 4. Optionally set `CORS_ALLOWED_ORIGINS` to your published Expo web URL (comma-separated). If unset, all origins are allowed (API is token-authenticated).
 5. After deploy, copy the service URL (e.g. `https://skillup-backend.onrender.com`) for the frontend `EXPO_PUBLIC_API_URL`.
 

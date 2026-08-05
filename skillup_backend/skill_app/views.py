@@ -13,7 +13,7 @@ from .serializers import UserSerializer
 # generation toward variety.
 SKILL_CATEGORIES = ['cognitive', 'physical', 'creative', 'social', 'practical']
 
-# Built-in task database (requirement 2.2.1), used when no Anthropic key is
+# Built-in task database (requirement 2.2.1), used when no OpenAI key is
 # configured or the API call fails. Entries per age group span the
 # categories above.
 FALLBACK_SKILLS = {
@@ -61,19 +61,19 @@ FALLBACK_COACH_TIPS = {
         "You're just getting started with \"{skill}\" — great choice. "
         "Keep the first session tiny: 15 focused minutes, one concrete goal, no pressure to be good. "
         "Decide when today you'll do it and what 'done' looks like for this one session. "
-        "(Set ANTHROPIC_API_KEY on the server to unlock the full AI coach.)"
+        "(Set OPENAI_API_KEY on the server to unlock the full AI coach.)"
     ),
     'practicing': (
         "You've made a start on \"{skill}\" — momentum matters more than intensity now. "
         "Pick one small weakness from your last attempt and drill just that for the next session. "
         "A simple test: try to do the basics without looking anything up, and note where you stall. "
-        "(Set ANTHROPIC_API_KEY on the server to unlock the full AI coach.)"
+        "(Set OPENAI_API_KEY on the server to unlock the full AI coach.)"
     ),
     'refining': (
         "You're refining \"{skill}\" — time to raise the bar. "
         "Set a mini-challenge that would have felt hard two weeks ago, and get feedback from someone else or record yourself. "
         "Compare against your earlier attempts to see how far you've come. "
-        "(Set ANTHROPIC_API_KEY on the server to unlock the full AI coach.)"
+        "(Set OPENAI_API_KEY on the server to unlock the full AI coach.)"
     ),
 }
 
@@ -89,6 +89,8 @@ COACH_SYSTEM_PROMPT = (
     "evaluation'), go along with it and coach in their style. "
     "Keep replies short and conversational — a few sentences, not essays."
 )
+
+OPENAI_MODEL = "gpt-4o-mini"
 
 
 class SignupView(APIView):
@@ -120,11 +122,11 @@ class LoginView(APIView):
         return Response({'error': 'Invalid Credentials'}, status=status.HTTP_400_BAD_REQUEST)
 
 
-def get_anthropic_client():
-    if not settings.ANTHROPIC_API_KEY:
+def get_openai_client():
+    if not settings.OPENAI_API_KEY:
         return None
-    import anthropic
-    return anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
+    from openai import OpenAI
+    return OpenAI(api_key=settings.OPENAI_API_KEY)
 
 
 class SkillView(APIView):
@@ -141,7 +143,7 @@ class SkillView(APIView):
 
         skills = []
         for _ in range(count):
-            skill = self.generate_skill_with_claude(age_group, exclude=skills)
+            skill = self.generate_skill_with_openai(age_group, exclude=skills)
             if skill:
                 skills.append(skill)
 
@@ -152,24 +154,31 @@ class SkillView(APIView):
 
         return Response({'skill': skills[0], 'skills': skills})
 
-    def generate_skill_with_claude(self, age_group, exclude=()):
-        client = get_anthropic_client()
+    def generate_skill_with_openai(self, age_group, exclude=()):
+        client = get_openai_client()
         if client is None:
             return None
         category = random.choice(SKILL_CATEGORIES)
         try:
-            message = client.messages.create(
-                model="claude-sonnet-4-5",
+            response = client.chat.completions.create(
+                model=OPENAI_MODEL,
                 max_tokens=200,
                 temperature=1.0,
-                system="You suggest specific, fresh skills to learn. Never suggest generic ideas.",
                 messages=[
-                    {"role": "user", "content": self.build_skill_prompt(age_group, category, exclude)}
+                    {
+                        "role": "system",
+                        "content": "You suggest specific, fresh skills to learn. Never suggest generic ideas.",
+                    },
+                    {
+                        "role": "user",
+                        "content": self.build_skill_prompt(age_group, category, exclude),
+                    },
                 ],
             )
-            return message.content[0].text.strip()
+            content = response.choices[0].message.content
+            return content.strip() if content else None
         except Exception as e:
-            print(f"Error calling Anthropic API, using fallback skills: {e}")
+            print(f"Error calling OpenAI API, using fallback skills: {e}")
             return None
 
     def build_skill_prompt(self, age_group, category, exclude=()):
@@ -204,13 +213,13 @@ class CoachView(APIView):
         if not skill:
             return Response({'error': 'skill is required'}, status=status.HTTP_400_BAD_REQUEST)
 
-        reply = self.coach_with_claude(skill, stage, messages)
+        reply = self.coach_with_openai(skill, stage, messages)
         if reply is None:
             reply = FALLBACK_COACH_TIPS[stage].format(skill=skill.split(':')[0])
         return Response({'reply': reply})
 
-    def coach_with_claude(self, skill, stage, messages):
-        client = get_anthropic_client()
+    def coach_with_openai(self, skill, stage, messages):
+        client = get_openai_client()
         if client is None:
             return None
 
@@ -223,15 +232,21 @@ class CoachView(APIView):
             conversation.insert(0, {'role': 'user', 'content': "I'd like some coaching on this skill."})
 
         try:
-            message = client.messages.create(
-                model="claude-sonnet-4-5",
+            response = client.chat.completions.create(
+                model=OPENAI_MODEL,
                 max_tokens=400,
-                system=COACH_SYSTEM_PROMPT.format(skill=skill, stage=stage),
-                messages=conversation,
+                messages=[
+                    {
+                        'role': 'system',
+                        'content': COACH_SYSTEM_PROMPT.format(skill=skill, stage=stage),
+                    },
+                    *conversation,
+                ],
             )
-            return message.content[0].text.strip()
+            content = response.choices[0].message.content
+            return content.strip() if content else None
         except Exception as e:
-            print(f"Error calling Anthropic API, using fallback coach tip: {e}")
+            print(f"Error calling OpenAI API, using fallback coach tip: {e}")
             return None
 
 
@@ -244,7 +259,7 @@ IMPROVE_SYSTEM_PROMPT = (
 
 
 def fallback_improve_skill(skill: str) -> str:
-    """Light local rewrite when Anthropic is unavailable."""
+    """Light local rewrite when OpenAI is unavailable."""
     if ':' in skill:
         heading, _, body = skill.partition(':')
         heading = heading.strip()
@@ -269,29 +284,30 @@ class ImproveView(APIView):
         if not skill:
             return Response({'error': 'skill is required'}, status=status.HTTP_400_BAD_REQUEST)
 
-        improved = self.improve_with_claude(skill)
+        improved = self.improve_with_openai(skill)
         if improved is None:
             improved = fallback_improve_skill(skill)
         return Response({'skill': improved})
 
-    def improve_with_claude(self, skill):
-        client = get_anthropic_client()
+    def improve_with_openai(self, skill):
+        client = get_openai_client()
         if client is None:
             return None
         try:
-            message = client.messages.create(
-                model="claude-sonnet-4-5",
+            response = client.chat.completions.create(
+                model=OPENAI_MODEL,
                 max_tokens=220,
                 temperature=0.7,
-                system=IMPROVE_SYSTEM_PROMPT,
                 messages=[
+                    {'role': 'system', 'content': IMPROVE_SYSTEM_PROMPT},
                     {
                         'role': 'user',
                         'content': f"Sharpen this skill description:\n\n{skill}",
-                    }
+                    },
                 ],
             )
-            return message.content[0].text.strip()
+            content = response.choices[0].message.content
+            return content.strip() if content else None
         except Exception as e:
-            print(f"Error calling Anthropic API, using fallback improve: {e}")
+            print(f"Error calling OpenAI API, using fallback improve: {e}")
             return None
