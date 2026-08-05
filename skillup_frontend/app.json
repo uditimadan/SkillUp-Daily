@@ -15,13 +15,15 @@
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.uditi-madan.skillup"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "com.uditimadan.skillup"
     },
     "web": {
       "bundler": "metro",
@@ -30,6 +32,12 @@
     "plugins": [
       "expo-router"
     ],
-    "scheme": "skillup"
+    "scheme": "skillup",
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "8ddd89cf-6d41-47bc-a1cc-e67b87c0dc74"
+      }
+    }
   }
 }
