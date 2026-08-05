@@ -1,0 +1,27 @@
+# macOS
+.DS_Store
+Icon?
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Django
+db.sqlite3
+staticfiles/
+*.log
+
+# Environment
+.env
+
+# Node / Expo
+node_modules/
+.expo/
+dist/
+web-build/
+
+# Local verification artifacts
+.verify-screenshots/
+.chrome-profile/
